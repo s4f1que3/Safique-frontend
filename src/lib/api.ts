@@ -10,6 +10,49 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+async function tryRefresh(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  const refreshToken = localStorage.getItem("refresh_token");
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch(`${BASE_URL}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!res.ok) return false;
+    const session = await res.json();
+    localStorage.setItem("token", session.access_token);
+    if (session.refresh_token) localStorage.setItem("refresh_token", session.refresh_token);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  const res = await fetch(url, {
+    ...options,
+    headers: { ...authHeaders(), ...(options.headers as Record<string, string> ?? {}) },
+  });
+  if (res.status === 401) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      return fetch(url, {
+        ...options,
+        headers: { ...authHeaders(), ...(options.headers as Record<string, string> ?? {}) },
+      });
+    }
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("refresh_token");
+      window.location.href = "/login";
+    }
+  }
+  return res;
+}
+
 async function handle(res: Response) {
   if (!res.ok) {
     const text = await res.text().catch(() => "Request failed");
@@ -25,40 +68,26 @@ export const articlesAPI = {
   getBySlug: (slug: string) =>
     fetch(`${BASE_URL}/articles/${slug}`).then(handle),
 
+  getById: (id: string) =>
+    fetch(`${BASE_URL}/articles/by-id/${id}`).then(handle),
+
   getPinned: () =>
     fetch(`${BASE_URL}/articles/pinned`).then(handle),
 
   create: (formData: FormData) =>
-    fetch(`${BASE_URL}/articles/create`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: formData,
-    }).then(handle),
+    fetchWithAuth(`${BASE_URL}/articles/create`, { method: "POST", body: formData }).then(handle),
 
   update: (id: string, formData: FormData) =>
-    fetch(`${BASE_URL}/articles/update/${id}`, {
-      method: "PATCH",
-      headers: authHeaders(),
-      body: formData,
-    }).then(handle),
+    fetchWithAuth(`${BASE_URL}/articles/update/${id}`, { method: "PATCH", body: formData }).then(handle),
 
   delete: (id: string) =>
-    fetch(`${BASE_URL}/articles/delete/${id}`, {
-      method: "DELETE",
-      headers: authHeaders(),
-    }).then(handle),
+    fetchWithAuth(`${BASE_URL}/articles/delete/${id}`, { method: "DELETE" }).then(handle),
 
   pin: (id: string) =>
-    fetch(`${BASE_URL}/articles/pin/${id}`, {
-      method: "PATCH",
-      headers: authHeaders(),
-    }).then(handle),
+    fetchWithAuth(`${BASE_URL}/articles/pin/${id}`, { method: "PATCH" }).then(handle),
 
   unpin: (id: string) =>
-    fetch(`${BASE_URL}/articles/unpin/${id}`, {
-      method: "PATCH",
-      headers: authHeaders(),
-    }).then(handle),
+    fetchWithAuth(`${BASE_URL}/articles/unpin/${id}`, { method: "PATCH" }).then(handle),
 };
 
 export const bioAPI = {
@@ -66,24 +95,21 @@ export const bioAPI = {
     fetch(`${BASE_URL}/bio`).then(handle),
 
   create: (data: { title: string; content: string }) =>
-    fetch(`${BASE_URL}/bio/create`, {
+    fetchWithAuth(`${BASE_URL}/bio/create`, {
       method: "POST",
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }).then(handle),
 
   update: (id: string, data: { title: string; content: string }) =>
-    fetch(`${BASE_URL}/bio/update/${id}`, {
+    fetchWithAuth(`${BASE_URL}/bio/update/${id}`, {
       method: "PATCH",
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }).then(handle),
 
   delete: (id: string) =>
-    fetch(`${BASE_URL}/bio/delete/${id}`, {
-      method: "DELETE",
-      headers: authHeaders(),
-    }).then(handle),
+    fetchWithAuth(`${BASE_URL}/bio/delete/${id}`, { method: "DELETE" }).then(handle),
 };
 
 export const contactAPI = {
@@ -91,30 +117,35 @@ export const contactAPI = {
     fetch(`${BASE_URL}/contact`).then(handle),
 
   create: (data: { phone: string; email: string; instagram: string; linkedin: string }) =>
-    fetch(`${BASE_URL}/contact/create`, {
+    fetchWithAuth(`${BASE_URL}/contact/create`, {
       method: "POST",
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }).then(handle),
 
   update: (data: { new_phone?: string; new_email?: string; new_instagram?: string; new_linkedin?: string }) =>
-    fetch(`${BASE_URL}/contact`, {
+    fetchWithAuth(`${BASE_URL}/contact`, {
       method: "PATCH",
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }).then(handle),
 
   deleteField: (option: string) =>
-    fetch(`${BASE_URL}/contact/fields?option=${option}`, {
-      method: "DELETE",
-      headers: authHeaders(),
-    }).then(handle),
+    fetchWithAuth(`${BASE_URL}/contact/fields?option=${option}`, { method: "DELETE" }).then(handle),
 
   delete: () =>
-    fetch(`${BASE_URL}/contact`, {
-      method: "DELETE",
-      headers: authHeaders(),
-    }).then(handle),
+    fetchWithAuth(`${BASE_URL}/contact`, { method: "DELETE" }).then(handle),
+};
+
+export const resumeAPI = {
+  get: () =>
+    fetch(`${BASE_URL}/resume`).then(handle),
+
+  upload: (formData: FormData) =>
+    fetchWithAuth(`${BASE_URL}/resume/upload`, { method: "POST", body: formData }).then(handle),
+
+  delete: () =>
+    fetchWithAuth(`${BASE_URL}/resume`, { method: "DELETE" }).then(handle),
 };
 
 export const authAPI = {
@@ -126,15 +157,12 @@ export const authAPI = {
     }).then(handle),
 
   signOut: () =>
-    fetch(`${BASE_URL}/auth/sign-out`, {
-      method: "POST",
-      headers: authHeaders(),
-    }).then(handle),
+    fetchWithAuth(`${BASE_URL}/auth/sign-out`, { method: "POST" }).then(handle),
 
   sendOtp: (email: string, password: string) =>
-    fetch(`${BASE_URL}/auth/send-otp`, {
+    fetchWithAuth(`${BASE_URL}/auth/send-otp`, {
       method: "POST",
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     }).then(handle),
 
@@ -146,16 +174,16 @@ export const authAPI = {
     }).then(handle),
 
   changeEmail: (data: { email: string; token: string; new_email: string }) =>
-    fetch(`${BASE_URL}/auth/change-email`, {
+    fetchWithAuth(`${BASE_URL}/auth/change-email`, {
       method: "POST",
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }).then(handle),
 
   changePassword: (data: { email: string; token: string; password: string; new_password: string }) =>
-    fetch(`${BASE_URL}/auth/change-password`, {
+    fetchWithAuth(`${BASE_URL}/auth/change-password`, {
       method: "POST",
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }).then(handle),
 };

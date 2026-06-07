@@ -96,28 +96,7 @@ export default function AdminBioPage() {
         )}
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-6">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-6">
-          Bio saved successfully.
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">Title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full border border-border-color rounded-xl px-4 py-3 text-text-primary text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-text-secondary"
-            placeholder="e.g. About me"
-          />
-        </div>
         <div>
           <label className="block text-sm font-medium text-text-primary mb-2">
             Content <span className="text-red-400">*</span>
@@ -131,13 +110,21 @@ export default function AdminBioPage() {
             placeholder="Write your bio here…"
           />
         </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
-        >
-          {saving ? "Saving…" : bio ? "Save changes" : "Create bio"}
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-primary text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+          >
+            {saving ? "Saving…" : bio ? "Save changes" : "Create bio"}
+          </button>
+          {success && (
+            <span className="text-green-600 text-sm">Bio saved successfully.</span>
+          )}
+          {error && (
+            <span className="text-red-500 text-sm">{error}</span>
+          )}
+        </div>
       </form>
     </div>
   );

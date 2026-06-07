@@ -36,10 +36,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const data = await authAPI.signIn(email, password);
     const accessToken = data?.session?.access_token;
+    const refreshToken = data?.session?.refresh_token;
     const userData = data?.user;
     if (!accessToken) throw new Error("Sign in failed");
     localStorage.setItem("token", accessToken);
     localStorage.setItem("user", JSON.stringify(userData));
+    if (refreshToken) localStorage.setItem("refresh_token", refreshToken);
     setToken(accessToken);
     setUser(userData);
   };
@@ -48,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authAPI.signOut().catch(() => {});
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("refresh_token");
     setToken(null);
     setUser(null);
   };

@@ -21,7 +21,7 @@ export default function EditArticlePage() {
 
   useEffect(() => {
     articlesAPI
-      .getBySlug(id)
+      .getById(id)
       .then(setArticle)
       .catch(() => router.push("/admin/articles"))
       .finally(() => setLoading(false));

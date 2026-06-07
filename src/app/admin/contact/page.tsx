@@ -103,17 +103,6 @@ export default function AdminContactPage() {
         {contact ? "Update your contact information." : "Add your contact information."}
       </p>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-6">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-6">
-          Contact info saved.
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-5">
         {fields.map(({ key, label, placeholder, type }) => (
           <div key={key}>
@@ -140,13 +129,21 @@ export default function AdminContactPage() {
           </div>
         ))}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
-        >
-          {saving ? "Saving…" : contact ? "Save changes" : "Create contact"}
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-primary text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+          >
+            {saving ? "Saving…" : contact ? "Save changes" : "Create contact"}
+          </button>
+          {success && (
+            <span className="text-green-600 text-sm">Contact info saved.</span>
+          )}
+          {error && (
+            <span className="text-red-500 text-sm">{error}</span>
+          )}
+        </div>
       </form>
     </div>
   );
