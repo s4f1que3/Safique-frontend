@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, X } from "lucide-react";
+import { Upload, X, FileText } from "lucide-react";
 
 interface ArticleFormProps {
   initialData?: {
     title?: string;
     content?: string;
     thumbnailUrl?: string;
-    existingImageCount?: number;
-    existingFileCount?: number;
+    existingImages?: string[];
+    existingFiles?: { url: string; originalFilename: string }[];
   };
   onSubmit: (formData: FormData) => Promise<void>;
   submitLabel?: string;
@@ -59,6 +59,9 @@ export default function ArticleForm({
     }
   };
 
+  const existingImages = initialData?.existingImages ?? [];
+  const existingFiles = initialData?.existingFiles ?? [];
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
@@ -105,7 +108,7 @@ export default function ArticleForm({
             className="flex items-center gap-2 cursor-pointer text-text-secondary text-sm hover:text-primary transition-colors w-fit"
           >
             <Upload size={15} />
-            <span>{thumbnail ? "Replace thumbnail" : "Add thumbnail"}</span>
+            <span>{thumbnail ? "Replace thumbnail" : initialData?.thumbnailUrl ? "Replace thumbnail" : "Add thumbnail"}</span>
           </label>
           <input
             id="thumbnail-upload"
@@ -122,7 +125,7 @@ export default function ArticleForm({
                 alt="Current thumbnail"
                 className="w-20 h-14 object-cover rounded-lg border border-border-color"
               />
-              <span className="text-xs text-text-secondary">Current thumbnail — upload a new one to replace</span>
+              <span className="text-xs text-text-secondary">Current — upload a new one to replace</span>
             </div>
           )}
           {thumbnail && (
@@ -161,10 +164,18 @@ export default function ArticleForm({
             onChange={addImages}
             className="hidden"
           />
-          {(initialData?.existingImageCount ?? 0) > 0 && (
-            <p className="mt-3 text-xs text-text-secondary">
-              {initialData!.existingImageCount} existing image{initialData!.existingImageCount !== 1 ? "s" : ""} already uploaded
-            </p>
+          {existingImages.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {existingImages.map((url, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={url}
+                  alt={`Image ${i + 1}`}
+                  className="w-20 h-14 object-cover rounded-lg border border-border-color"
+                />
+              ))}
+            </div>
           )}
           {images.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -208,10 +219,21 @@ export default function ArticleForm({
             onChange={addFiles}
             className="hidden"
           />
-          {(initialData?.existingFileCount ?? 0) > 0 && (
-            <p className="mt-3 text-xs text-text-secondary">
-              {initialData!.existingFileCount} existing file{initialData!.existingFileCount !== 1 ? "s" : ""} already uploaded
-            </p>
+          {existingFiles.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {existingFiles.map((f, i) => (
+                <a
+                  key={i}
+                  href={f.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 bg-surface px-2.5 py-1 rounded-lg text-xs text-text-secondary hover:text-primary transition-colors"
+                >
+                  <FileText size={11} />
+                  {f.originalFilename}
+                </a>
+              ))}
+            </div>
           )}
           {files.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">

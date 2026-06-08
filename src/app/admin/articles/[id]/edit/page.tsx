@@ -12,8 +12,8 @@ interface Article {
   Title: string;
   content: string;
   thumbnailUrl?: string;
-  images?: unknown[];
-  Files?: unknown[];
+  imageUrls?: string[];
+  fileAssets?: { url: string; originalFilename: string }[];
 }
 
 export default function EditArticlePage() {
@@ -68,8 +68,8 @@ export default function EditArticlePage() {
           title: article.Title,
           content: article.content,
           thumbnailUrl: article.thumbnailUrl,
-          existingImageCount: article.images?.length ?? 0,
-          existingFileCount: article.Files?.length ?? 0,
+          existingImages: article.imageUrls ?? [],
+          existingFiles: article.fileAssets ?? [],
         }}
         onSubmit={handleSubmit}
         submitLabel="Save changes"
