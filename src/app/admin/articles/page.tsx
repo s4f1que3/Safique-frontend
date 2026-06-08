@@ -5,24 +5,18 @@ import Link from "next/link";
 import { Plus, Pin, PinOff, Trash2, Pencil } from "lucide-react";
 import { articlesAPI, uploadedArticlesAPI } from "@/lib/api";
 
-interface Article {
+interface ArticleItem {
   _id: string;
   Title: string;
-  content: string;
+  content?: string;
   pinned?: boolean;
   publishedAt?: string;
-}
-
-interface UploadedArticle {
-  _id: string;
-  Title: string;
-  publishedAt?: string;
+  _type: "article" | "uploaded_article";
 }
 
 export default function AdminArticlesPage() {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [uploadedArticles, setUploadedArticles] = useState<UploadedArticle[]>([]);
-  const [pinned, setPinned] = useState<Article | null>(null);
+  const [allArticles, setAllArticles] = useState<ArticleItem[]>([]);
+  const [pinnedRegular, setPinnedRegular] = useState<ArticleItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -33,9 +27,14 @@ export default function AdminArticlesPage() {
         articlesAPI.getPinned(),
         uploadedArticlesAPI.getAll(),
       ]);
-      setArticles(all.status === "fulfilled" && Array.isArray(all.value) ? all.value : []);
-      setPinned(pin.status === "fulfilled" ? pin.value : null);
-      setUploadedArticles(uploaded.status === "fulfilled" && Array.isArray(uploaded.value) ? uploaded.value : []);
+      const regular = (
+        all.status === "fulfilled" && Array.isArray(all.value) ? all.value : []
+      ).map((a: Omit<ArticleItem, "_type">) => ({ ...a, _type: "article" as const }));
+      const uploadedItems = (
+        uploaded.status === "fulfilled" && Array.isArray(uploaded.value) ? uploaded.value : []
+      ).map((a: Omit<ArticleItem, "_type">) => ({ ...a, _type: "uploaded_article" as const }));
+      setAllArticles([...regular, ...uploadedItems]);
+      setPinnedRegular(pin.status === "fulfilled" ? pin.value : null);
     } catch {
       setError("Failed to load articles");
     } finally {
@@ -45,41 +44,49 @@ export default function AdminArticlesPage() {
 
   useEffect(() => { load(); }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (item: ArticleItem) => {
     if (!confirm("Delete this article?")) return;
     try {
-      await articlesAPI.delete(id);
+      if (item._type === "article") {
+        await articlesAPI.delete(item._id);
+      } else {
+        await uploadedArticlesAPI.delete(item._id);
+      }
       load();
     } catch {
       alert("Failed to delete article");
     }
   };
 
-  const handleDeleteUploaded = async (id: string) => {
-    if (!confirm("Delete this uploaded article?")) return;
-    try {
-      await uploadedArticlesAPI.delete(id);
-      load();
-    } catch {
-      alert("Failed to delete uploaded article");
-    }
-  };
-
-  const handlePin = async (id: string, isPinned: boolean) => {
-    if (isPinned) {
-      setPinned(null);
-    } else {
-      setPinned(articles.find((a) => a._id === id) ?? null);
-    }
-    try {
-      if (isPinned) {
-        await articlesAPI.unpin(id);
-      } else {
-        await articlesAPI.pin(id);
+  const handlePin = async (item: ArticleItem) => {
+    if (item._type === "article") {
+      const isPinned = pinnedRegular?._id === item._id;
+      setPinnedRegular(isPinned ? null : item);
+      try {
+        if (isPinned) {
+          await articlesAPI.unpin(item._id);
+        } else {
+          await articlesAPI.pin(item._id);
+        }
+      } catch (err: unknown) {
+        load();
+        alert(err instanceof Error ? err.message : "Failed to update pin");
       }
-    } catch (err: unknown) {
-      load();
-      alert(err instanceof Error ? err.message : "Failed to update pin");
+    } else {
+      const isPinned = item.pinned;
+      setAllArticles((prev) =>
+        prev.map((a) => (a._id === item._id ? { ...a, pinned: !isPinned } : a))
+      );
+      try {
+        if (isPinned) {
+          await uploadedArticlesAPI.unpin(item._id);
+        } else {
+          await uploadedArticlesAPI.pin(item._id);
+        }
+      } catch (err: unknown) {
+        load();
+        alert(err instanceof Error ? err.message : "Failed to update pin");
+      }
     }
   };
 
@@ -97,7 +104,9 @@ export default function AdminArticlesPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-text-primary mb-1">Articles</h1>
-          <p className="text-text-secondary text-sm">{articles.length} article{articles.length !== 1 ? "s" : ""}</p>
+          <p className="text-text-secondary text-sm">
+            {allArticles.length} article{allArticles.length !== 1 ? "s" : ""}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -123,7 +132,7 @@ export default function AdminArticlesPage() {
         </div>
       )}
 
-      {articles.length === 0 ? (
+      {allArticles.length === 0 ? (
         <div className="border border-dashed border-border-color rounded-2xl p-12 text-center">
           <p className="text-text-secondary text-sm mb-4">No articles yet.</p>
           <Link
@@ -136,8 +145,11 @@ export default function AdminArticlesPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {articles.map((article) => {
-            const isPinned = pinned?._id === article._id;
+          {allArticles.map((article) => {
+            const isPinned =
+              article._type === "article"
+                ? pinnedRegular?._id === article._id
+                : article.pinned === true;
             return (
               <div
                 key={article._id}
@@ -145,33 +157,41 @@ export default function AdminArticlesPage() {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    {isPinned && (
-                      <Pin size={12} className="text-accent shrink-0" />
-                    )}
+                    {isPinned && <Pin size={12} className="text-accent shrink-0" />}
                     <h3 className="text-text-primary font-medium text-sm truncate">
                       {article.Title}
                     </h3>
                   </div>
-                  <p className="text-text-secondary text-xs truncate">
-                    {article.content?.substring(0, 80)}…
-                  </p>
+                  {article.content && (
+                    <p className="text-text-secondary text-xs truncate">
+                      {article.content.substring(0, 80)}…
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-                    onClick={() => handlePin(article._id, isPinned)}
+                    onClick={() => handlePin(article)}
                     title={isPinned ? "Unpin" : "Pin"}
-                    className={`p-2 rounded-lg transition-colors ${isPinned ? "text-accent hover:bg-accent/10" : "text-text-secondary hover:text-text-primary hover:bg-surface"}`}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isPinned
+                        ? "text-accent hover:bg-accent/10"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface"
+                    }`}
                   >
                     {isPinned ? <PinOff size={15} /> : <Pin size={15} />}
                   </button>
                   <Link
-                    href={`/admin/articles/${article._id}/edit`}
+                    href={
+                      article._type === "article"
+                        ? `/admin/articles/${article._id}/edit`
+                        : `/admin/articles/${article._id}/edit-uploaded`
+                    }
                     className="p-2 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 transition-colors"
                   >
                     <Pencil size={15} />
                   </Link>
                   <button
-                    onClick={() => handleDelete(article._id)}
+                    onClick={() => handleDelete(article)}
                     className="p-2 rounded-lg text-text-secondary hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 size={15} />
@@ -180,38 +200,6 @@ export default function AdminArticlesPage() {
               </div>
             );
           })}
-        </div>
-      )}
-
-      {uploadedArticles.length > 0 && (
-        <div className="mt-10">
-          <h2 className="text-base font-semibold text-text-primary mb-3">Uploaded articles</h2>
-          <div className="space-y-3">
-            {uploadedArticles.map((article) => (
-              <div
-                key={article._id}
-                className="border border-border-color rounded-2xl px-6 py-4 flex items-center justify-between gap-4"
-              >
-                <h3 className="text-text-primary font-medium text-sm truncate flex-1 min-w-0">
-                  {article.Title}
-                </h3>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Link
-                    href={`/admin/articles/${article._id}/edit-uploaded`}
-                    className="p-2 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 transition-colors"
-                  >
-                    <Pencil size={15} />
-                  </Link>
-                  <button
-                    onClick={() => handleDeleteUploaded(article._id)}
-                    className="p-2 rounded-lg text-text-secondary hover:text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>

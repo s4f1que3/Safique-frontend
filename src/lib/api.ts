@@ -103,6 +103,12 @@ export const uploadedArticlesAPI = {
   update: (id: string, formData: FormData) =>
     fetchWithAuth(`${BASE_URL}/upload-article/update/${id}`, { method: "PATCH", body: formData }).then(handle),
 
+  pin: (id: string) =>
+    fetchWithAuth(`${BASE_URL}/upload-article/pin/${id}`, { method: "PATCH" }).then(handle),
+
+  unpin: (id: string) =>
+    fetchWithAuth(`${BASE_URL}/upload-article/unpin/${id}`, { method: "PATCH" }).then(handle),
+
   delete: (id: string) =>
     fetchWithAuth(`${BASE_URL}/upload-article?id=${id}`, { method: "DELETE" }).then(handle),
 };
