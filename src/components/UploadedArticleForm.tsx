@@ -9,6 +9,7 @@ interface UploadedArticleFormProps {
     pinned?: boolean;
     articleUrl?: string;
     articleFilename?: string;
+    thumbnailUrl?: string;
     existingImages?: { url: string }[];
     existingFiles?: { url: string; originalFilename: string }[];
   };
@@ -24,6 +25,9 @@ export default function UploadedArticleForm({
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [articleFile, setArticleFile] = useState<File | null>(null);
   const [removeArticle, setRemoveArticle] = useState(false);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [removeThumbnail, setRemoveThumbnail] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [removedImageUrls, setRemovedImageUrls] = useState<Set<string>>(new Set());
@@ -53,6 +57,8 @@ export default function UploadedArticleForm({
       fd.append("pinned", "false");
       if (articleFile) fd.append("article", articleFile);
       if (removeArticle) fd.append("remove_article", "true");
+      if (thumbnailFile) fd.append("thumbnail", thumbnailFile);
+      if (removeThumbnail && !thumbnailFile) fd.append("remove_thumbnail", "true");
       images.forEach((img) => fd.append("images", img));
       files.forEach((f) => fd.append("files", f));
       if (removedImageUrls.size > 0)
@@ -170,6 +176,98 @@ export default function UploadedArticleForm({
                 className="hover:text-red-500 transition-colors"
               >
                 <X size={11} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Thumbnail */}
+      <div>
+        <label className="block text-sm font-medium text-text-primary mb-2">
+          Thumbnail
+        </label>
+        <div className="border border-dashed border-border-color rounded-xl p-4">
+          <label
+            htmlFor="thumbnail-upload"
+            className="flex items-center gap-2 cursor-pointer text-text-secondary text-sm hover:text-primary transition-colors w-fit"
+          >
+            <Upload size={15} />
+            <span>
+              {thumbnailFile || (initialData?.thumbnailUrl && !removeThumbnail)
+                ? "Replace thumbnail"
+                : "Upload thumbnail"}
+            </span>
+          </label>
+          <input
+            id="thumbnail-upload"
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              setThumbnailFile(file);
+              setRemoveThumbnail(false);
+              if (file) {
+                const url = URL.createObjectURL(file);
+                setThumbnailPreview(url);
+              } else {
+                setThumbnailPreview(null);
+              }
+              e.target.value = "";
+            }}
+            className="hidden"
+          />
+
+          {!thumbnailFile && !removeThumbnail && initialData?.thumbnailUrl && (
+            <div className="mt-3 flex items-start gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={initialData.thumbnailUrl}
+                alt="Thumbnail"
+                className="w-20 h-14 object-cover rounded-lg border border-border-color"
+              />
+              <button
+                type="button"
+                onClick={() => setRemoveThumbnail(true)}
+                className="text-xs text-red-400 hover:text-red-600 transition-colors flex items-center gap-1 mt-1"
+              >
+                <X size={11} /> Remove
+              </button>
+            </div>
+          )}
+
+          {removeThumbnail && !thumbnailFile && (
+            <div className="mt-3 flex items-center gap-2 text-xs text-text-secondary">
+              <span>Thumbnail will be removed.</span>
+              <button
+                type="button"
+                onClick={() => setRemoveThumbnail(false)}
+                className="text-primary hover:underline"
+              >
+                Undo
+              </button>
+            </div>
+          )}
+
+          {thumbnailFile && (
+            <div className="mt-3 flex items-start gap-3">
+              {thumbnailPreview && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={thumbnailPreview}
+                  alt="Thumbnail preview"
+                  className="w-20 h-14 object-cover rounded-lg border border-border-color"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setThumbnailFile(null);
+                  setThumbnailPreview(null);
+                }}
+                className="text-xs text-red-400 hover:text-red-600 transition-colors flex items-center gap-1 mt-1"
+              >
+                <X size={11} /> Remove
               </button>
             </div>
           )}

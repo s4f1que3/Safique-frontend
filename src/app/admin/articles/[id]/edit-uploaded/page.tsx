@@ -13,6 +13,7 @@ interface UploadedArticle {
   pinned?: boolean;
   articleUrl?: string;
   articleFilename?: string;
+  thumbnailUrl?: string;
   imageItems?: { url: string }[];
   fileItems?: { url: string; originalFilename: string }[];
 }
@@ -45,6 +46,10 @@ export default function EditUploadedArticlePage() {
     if (removeImageUrls) editData.append("remove_image_urls", removeImageUrls as string);
     const removeFileUrls = formData.get("remove_file_urls");
     if (removeFileUrls) editData.append("remove_file_urls", removeFileUrls as string);
+    const thumbnailFile = formData.get("thumbnail");
+    if (thumbnailFile instanceof File) editData.append("thumbnail", thumbnailFile);
+    const removeThumbnail = formData.get("remove_thumbnail");
+    if (removeThumbnail) editData.append("remove_thumbnail", removeThumbnail as string);
     await uploadedArticlesAPI.update(id, editData);
     router.push("/admin/articles");
   };
@@ -76,6 +81,7 @@ export default function EditUploadedArticlePage() {
           pinned: article.pinned,
           articleUrl: article.articleUrl,
           articleFilename: article.articleFilename,
+          thumbnailUrl: article.thumbnailUrl,
           existingImages: article.imageItems ?? [],
           existingFiles: article.fileItems ?? [],
         }}

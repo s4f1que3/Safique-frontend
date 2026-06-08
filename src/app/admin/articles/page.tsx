@@ -11,6 +11,7 @@ interface ArticleItem {
   content?: string;
   pinned?: boolean;
   publishedAt?: string;
+  thumbnailUrl?: string;
   _type: "article" | "uploaded_article";
 }
 
@@ -155,6 +156,14 @@ export default function AdminArticlesPage() {
                 key={article._id}
                 className="border border-border-color rounded-2xl px-6 py-4 flex items-center justify-between gap-4"
               >
+                {article.thumbnailUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={article.thumbnailUrl}
+                    alt=""
+                    className="w-10 h-10 rounded-lg object-cover shrink-0 border border-border-color"
+                  />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     {isPinned && <Pin size={12} className="text-accent shrink-0" />}
