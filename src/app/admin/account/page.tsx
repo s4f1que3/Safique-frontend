@@ -285,7 +285,7 @@ export default function AdminAccountPage() {
         <div>
           {emailSuccess && (
             <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-xl mb-6">
-              Email change initiated. Check your current email to confirm.
+              Email updated successfully.
             </div>
           )}
           {emailError && (
@@ -294,64 +294,66 @@ export default function AdminAccountPage() {
             </div>
           )}
 
-          {!emailOtpSent ? (
-            <form onSubmit={sendEmailOtp} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">New email address</label>
-                <input
-                  type="email"
-                  value={emailForm.new_email}
-                  onChange={(e) => setEmailForm({ new_email: e.target.value })}
-                  required
-                  className="w-full border border-border-color rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
-                  placeholder="new@example.com"
-                />
-              </div>
-              <p className="text-text-secondary text-xs">
-                A confirmation code will be sent to your <strong>current</strong> email address.
-              </p>
-              <button
-                type="submit"
-                disabled={emailLoading}
-                className="bg-primary text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
-              >
-                {emailLoading ? "Sending OTP…" : "Send confirmation code"}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={confirmEmailChange} className="space-y-4">
-              <p className="text-text-secondary text-sm">
-                A confirmation code was sent to <strong>{user?.email}</strong>. Enter it below.
-              </p>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">Confirmation code</label>
-                <input
-                  type="text"
-                  value={emailOtp}
-                  onChange={(e) => setEmailOtp(e.target.value)}
-                  required
-                  className="w-full border border-border-color rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors tracking-widest"
-                  placeholder="000000"
-                  maxLength={6}
-                />
-              </div>
-              <div className="flex gap-3">
+          {!emailSuccess && (
+            !emailOtpSent ? (
+              <form onSubmit={sendEmailOtp} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-2">New email address</label>
+                  <input
+                    type="email"
+                    value={emailForm.new_email}
+                    onChange={(e) => setEmailForm({ new_email: e.target.value })}
+                    required
+                    className="w-full border border-border-color rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
+                    placeholder="new@example.com"
+                  />
+                </div>
+                <p className="text-text-secondary text-xs">
+                  A confirmation code will be sent to your <strong>current</strong> email address.
+                </p>
                 <button
                   type="submit"
                   disabled={emailLoading}
                   className="bg-primary text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
                 >
-                  {emailLoading ? "Confirming…" : "Confirm change"}
+                  {emailLoading ? "Sending…" : "Send confirmation code"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => { setEmailOtpSent(false); setEmailError(""); }}
-                  className="text-sm text-text-secondary hover:text-text-primary transition-colors px-4"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+              </form>
+            ) : (
+              <form onSubmit={confirmEmailChange} className="space-y-4">
+                <p className="text-text-secondary text-sm">
+                  A confirmation code was sent to <strong>{user?.email}</strong>. Enter it below.
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Confirmation code</label>
+                  <input
+                    type="text"
+                    value={emailOtp}
+                    onChange={(e) => setEmailOtp(e.target.value)}
+                    required
+                    className="w-full border border-border-color rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors tracking-widest"
+                    placeholder="000000"
+                    maxLength={6}
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={emailLoading}
+                    className="bg-primary text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  >
+                    {emailLoading ? "Confirming…" : "Confirm change"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setEmailOtpSent(false); setEmailError(""); }}
+                    className="text-sm text-text-secondary hover:text-text-primary transition-colors px-4"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )
           )}
         </div>
       )}
