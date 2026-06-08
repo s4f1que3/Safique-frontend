@@ -90,6 +90,20 @@ export const articlesAPI = {
     fetchWithAuth(`${BASE_URL}/articles/unpin/${id}`, { method: "PATCH" }).then(handle),
 };
 
+export const uploadedArticlesAPI = {
+  getById: (id: string) =>
+    fetchWithAuth(`${BASE_URL}/upload-article/${id}`).then(handle),
+
+  create: (formData: FormData) =>
+    fetchWithAuth(`${BASE_URL}/upload-article/create`, { method: "POST", body: formData }).then(handle),
+
+  update: (id: string, formData: FormData) =>
+    fetchWithAuth(`${BASE_URL}/upload-article/update/${id}`, { method: "PATCH", body: formData }).then(handle),
+
+  delete: (id: string) =>
+    fetchWithAuth(`${BASE_URL}/upload-article?id=${id}`, { method: "DELETE" }).then(handle),
+};
+
 export const bioAPI = {
   get: () =>
     fetch(`${BASE_URL}/bio`).then(handle),

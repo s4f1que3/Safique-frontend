@@ -80,13 +80,22 @@ export default function AdminArticlesPage() {
           <h1 className="text-2xl font-semibold text-text-primary mb-1">Articles</h1>
           <p className="text-text-secondary text-sm">{articles.length} article{articles.length !== 1 ? "s" : ""}</p>
         </div>
-        <Link
-          href="/admin/articles/new"
-          className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors"
-        >
-          <Plus size={15} />
-          New article
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/articles/upload"
+            className="flex items-center gap-2 border border-border-color text-text-primary px-4 py-2 rounded-full text-sm font-medium hover:bg-surface transition-colors"
+          >
+            <Plus size={15} />
+            Upload article
+          </Link>
+          <Link
+            href="/admin/articles/new"
+            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors"
+          >
+            <Plus size={15} />
+            New article
+          </Link>
+        </div>
       </div>
 
       {error && (
