@@ -28,7 +28,14 @@ export default function EditArticlePage() {
   }, [id, router]);
 
   const handleSubmit = async (formData: FormData) => {
-    await articlesAPI.update(id, formData);
+    const editData = new FormData();
+    editData.append("new_title", formData.get("title") as string);
+    editData.append("new_content", formData.get("content") as string);
+    const thumbnail = formData.get("thumbnail");
+    if (thumbnail instanceof File) editData.append("thumbnail", thumbnail);
+    formData.getAll("images").forEach((img) => editData.append("images", img));
+    formData.getAll("files").forEach((f) => editData.append("files", f));
+    await articlesAPI.update(id, editData);
     router.push("/admin/articles");
   };
 
