@@ -12,8 +12,9 @@ interface Article {
   Title: string;
   content: string;
   thumbnailUrl?: string;
-  imageUrls?: string[];
-  fileAssets?: { url: string; originalFilename: string }[];
+  thumbnailKey?: string;
+  imageItems?: { _key: string; url: string }[];
+  fileItems?: { _key: string; url: string; originalFilename: string }[];
 }
 
 export default function EditArticlePage() {
@@ -38,6 +39,12 @@ export default function EditArticlePage() {
     if (thumbnail instanceof File) editData.append("thumbnail", thumbnail);
     formData.getAll("images").forEach((img) => editData.append("images", img));
     formData.getAll("files").forEach((f) => editData.append("files", f));
+    const removeImageKeys = formData.get("remove_image_keys");
+    if (removeImageKeys) editData.append("remove_image_keys", removeImageKeys as string);
+    const removeFileKeys = formData.get("remove_file_keys");
+    if (removeFileKeys) editData.append("remove_file_keys", removeFileKeys as string);
+    const removeThumbnail = formData.get("remove_thumbnail");
+    if (removeThumbnail) editData.append("remove_thumbnail", removeThumbnail as string);
     await articlesAPI.update(id, editData);
     router.push("/admin/articles");
   };
@@ -68,8 +75,9 @@ export default function EditArticlePage() {
           title: article.Title,
           content: article.content,
           thumbnailUrl: article.thumbnailUrl,
-          existingImages: article.imageUrls ?? [],
-          existingFiles: article.fileAssets ?? [],
+          thumbnailKey: article.thumbnailKey,
+          existingImages: article.imageItems ?? [],
+          existingFiles: article.fileItems ?? [],
         }}
         onSubmit={handleSubmit}
         submitLabel="Save changes"

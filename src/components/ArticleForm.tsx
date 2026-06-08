@@ -8,8 +8,9 @@ interface ArticleFormProps {
     title?: string;
     content?: string;
     thumbnailUrl?: string;
-    existingImages?: string[];
-    existingFiles?: { url: string; originalFilename: string }[];
+    thumbnailKey?: string;
+    existingImages?: { _key: string; url: string }[];
+    existingFiles?: { _key: string; url: string; originalFilename: string }[];
   };
   onSubmit: (formData: FormData) => Promise<void>;
   submitLabel?: string;
@@ -23,8 +24,11 @@ export default function ArticleForm({
   const [title, setTitle] = useState(initialData?.title || "");
   const [content, setContent] = useState(initialData?.content || "");
   const [thumbnail, setThumbnail] = useState<File | null>(null);
+  const [removeThumbnail, setRemoveThumbnail] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [files, setFiles] = useState<File[]>([]);
+  const [removedImageKeys, setRemovedImageKeys] = useState<Set<string>>(new Set());
+  const [removedFileKeys, setRemovedFileKeys] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -40,6 +44,14 @@ export default function ArticleForm({
     e.target.value = "";
   };
 
+  const removeExistingImage = (key: string) => {
+    setRemovedImageKeys((prev) => new Set([...prev, key]));
+  };
+
+  const removeExistingFile = (key: string) => {
+    setRemovedFileKeys((prev) => new Set([...prev, key]));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -49,8 +61,13 @@ export default function ArticleForm({
       fd.append("title", title);
       fd.append("content", content);
       if (thumbnail) fd.append("thumbnail", thumbnail);
+      if (removeThumbnail) fd.append("remove_thumbnail", "true");
       images.forEach((img) => fd.append("images", img));
       files.forEach((f) => fd.append("files", f));
+      if (removedImageKeys.size > 0)
+        fd.append("remove_image_keys", JSON.stringify([...removedImageKeys]));
+      if (removedFileKeys.size > 0)
+        fd.append("remove_file_keys", JSON.stringify([...removedFileKeys]));
       await onSubmit(fd);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -59,8 +76,12 @@ export default function ArticleForm({
     }
   };
 
-  const existingImages = initialData?.existingImages ?? [];
-  const existingFiles = initialData?.existingFiles ?? [];
+  const existingImages = (initialData?.existingImages ?? []).filter(
+    (img) => !removedImageKeys.has(img._key)
+  );
+  const existingFiles = (initialData?.existingFiles ?? []).filter(
+    (f) => !removedFileKeys.has(f._key)
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -98,6 +119,7 @@ export default function ArticleForm({
         />
       </div>
 
+      {/* Thumbnail */}
       <div>
         <label className="block text-sm font-medium text-text-primary mb-2">
           Thumbnail
@@ -108,16 +130,26 @@ export default function ArticleForm({
             className="flex items-center gap-2 cursor-pointer text-text-secondary text-sm hover:text-primary transition-colors w-fit"
           >
             <Upload size={15} />
-            <span>{thumbnail ? "Replace thumbnail" : initialData?.thumbnailUrl ? "Replace thumbnail" : "Add thumbnail"}</span>
+            <span>
+              {thumbnail
+                ? "Replace thumbnail"
+                : initialData?.thumbnailUrl && !removeThumbnail
+                ? "Replace thumbnail"
+                : "Add thumbnail"}
+            </span>
           </label>
           <input
             id="thumbnail-upload"
             type="file"
             accept="image/*"
-            onChange={(e) => setThumbnail(e.target.files?.[0] || null)}
+            onChange={(e) => {
+              setThumbnail(e.target.files?.[0] || null);
+              setRemoveThumbnail(false);
+            }}
             className="hidden"
           />
-          {!thumbnail && initialData?.thumbnailUrl && (
+
+          {!thumbnail && !removeThumbnail && initialData?.thumbnailUrl && (
             <div className="mt-3 flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -125,9 +157,34 @@ export default function ArticleForm({
                 alt="Current thumbnail"
                 className="w-20 h-14 object-cover rounded-lg border border-border-color"
               />
-              <span className="text-xs text-text-secondary">Current — upload a new one to replace</span>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-text-secondary">
+                  Current — upload a new one to replace
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRemoveThumbnail(true)}
+                  className="text-xs text-red-400 hover:text-red-600 transition-colors flex items-center gap-1 w-fit"
+                >
+                  <X size={11} /> Remove thumbnail
+                </button>
+              </div>
             </div>
           )}
+
+          {removeThumbnail && !thumbnail && (
+            <div className="mt-3 flex items-center gap-2 text-xs text-text-secondary">
+              <span>Thumbnail will be removed.</span>
+              <button
+                type="button"
+                onClick={() => setRemoveThumbnail(false)}
+                className="text-primary hover:underline"
+              >
+                Undo
+              </button>
+            </div>
+          )}
+
           {thumbnail && (
             <div className="mt-3 flex items-center gap-1.5 bg-surface px-2.5 py-1 rounded-lg text-xs text-text-secondary w-fit">
               {thumbnail.name}
@@ -143,6 +200,7 @@ export default function ArticleForm({
         </div>
       </div>
 
+      {/* Images */}
       <div>
         <label className="block text-sm font-medium text-text-primary mb-2">
           Images{" "}
@@ -166,14 +224,22 @@ export default function ArticleForm({
           />
           {existingImages.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {existingImages.map((url, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={i}
-                  src={url}
-                  alt={`Image ${i + 1}`}
-                  className="w-20 h-14 object-cover rounded-lg border border-border-color"
-                />
+              {existingImages.map((img) => (
+                <div key={img._key} className="relative group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt="Uploaded image"
+                    className="w-20 h-14 object-cover rounded-lg border border-border-color"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(img._key)}
+                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full items-center justify-center hidden group-hover:flex"
+                  >
+                    <X size={8} />
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -199,6 +265,7 @@ export default function ArticleForm({
         </div>
       </div>
 
+      {/* Files */}
       <div>
         <label className="block text-sm font-medium text-text-primary mb-2">
           Files{" "}
@@ -221,17 +288,25 @@ export default function ArticleForm({
           />
           {existingFiles.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {existingFiles.map((f, i) => (
-                <a
-                  key={i}
-                  href={f.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-surface px-2.5 py-1 rounded-lg text-xs text-text-secondary hover:text-primary transition-colors"
-                >
-                  <FileText size={11} />
-                  {f.originalFilename}
-                </a>
+              {existingFiles.map((f) => (
+                <div key={f._key} className="flex items-center gap-1 group">
+                  <a
+                    href={f.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 bg-surface px-2.5 py-1 rounded-lg text-xs text-text-secondary hover:text-primary transition-colors"
+                  >
+                    <FileText size={11} />
+                    {f.originalFilename}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => removeExistingFile(f._key)}
+                    className="p-0.5 text-text-secondary hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
               ))}
             </div>
           )}
