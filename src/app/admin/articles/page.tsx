@@ -47,14 +47,19 @@ export default function AdminArticlesPage() {
   };
 
   const handlePin = async (id: string, isPinned: boolean) => {
+    if (isPinned) {
+      setPinned(null);
+    } else {
+      setPinned(articles.find((a) => a._id === id) ?? null);
+    }
     try {
       if (isPinned) {
         await articlesAPI.unpin(id);
       } else {
         await articlesAPI.pin(id);
       }
-      load();
     } catch (err: unknown) {
+      load();
       alert(err instanceof Error ? err.message : "Failed to update pin");
     }
   };
