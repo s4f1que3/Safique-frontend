@@ -9,11 +9,12 @@ import ArticleCard from "@/components/ArticleCard";
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 async function getData() {
-  const [articlesRes, pinnedRes, bioRes, contactRes] = await Promise.allSettled([
+  const [articlesRes, pinnedRes, bioRes, contactRes, resumeRes] = await Promise.allSettled([
     fetch(`${API}/articles`, { cache: "no-store" }),
     fetch(`${API}/articles/pinned`, { cache: "no-store" }),
     fetch(`${API}/bio`, { cache: "no-store" }),
     fetch(`${API}/contact`, { cache: "no-store" }),
+    fetch(`${API}/resume`, { cache: "no-store" }),
   ]);
 
   const articles = articlesRes.status === "fulfilled" && articlesRes.value.ok
@@ -28,12 +29,16 @@ async function getData() {
   const contact = contactRes.status === "fulfilled" && contactRes.value.ok
     ? await contactRes.value.json().catch(() => null)
     : null;
+  const resumeData = resumeRes.status === "fulfilled" && resumeRes.value.ok
+    ? await resumeRes.value.json().catch(() => null)
+    : null;
+  const resumeUrl: string | null = resumeData?.file?.asset?.url ?? null;
 
-  return { articles: Array.isArray(articles) ? articles : [], pinned, bio, contact };
+  return { articles: Array.isArray(articles) ? articles : [], pinned, bio, contact, resumeUrl };
 }
 
 export default async function HomePage() {
-  const { articles, pinned, bio, contact } = await getData();
+  const { articles, pinned, bio, contact, resumeUrl } = await getData();
 
   const recent = articles
     .filter((a: { _id: string }) => !pinned || a._id !== pinned._id)
@@ -123,13 +128,17 @@ export default async function HomePage() {
           <p className="text-text-secondary text-sm mb-6">
             Download my resume to learn more about my experience and background.
           </p>
-          <a
-            href="/api/resume"
-            className="inline-flex items-center gap-2 border border-border-color text-text-primary px-5 py-2.5 rounded-full text-sm font-medium hover:border-primary hover:text-primary transition-colors"
-          >
-            <Download size={15} />
-            Download CV
-          </a>
+          {resumeUrl ? (
+            <a
+              href={resumeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 border border-border-color text-text-primary px-5 py-2.5 rounded-full text-sm font-medium hover:border-primary hover:text-primary transition-colors"
+            >
+              <Download size={15} />
+              Download CV
+            </a>
+          ) : null}
         </section>
 
         {/* Contact */}
