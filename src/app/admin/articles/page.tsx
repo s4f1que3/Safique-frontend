@@ -30,7 +30,9 @@ export default function AdminArticlesPage() {
       ]);
       const regular = (
         all.status === "fulfilled" && Array.isArray(all.value) ? all.value : []
-      ).map((a: Omit<ArticleItem, "_type">) => ({ ...a, _type: "article" as const }));
+      )
+        .filter((a: { _type?: string }) => a._type === "article")
+        .map((a: Omit<ArticleItem, "_type">) => ({ ...a, _type: "article" as const }));
       const uploadedItems = (
         uploaded.status === "fulfilled" && Array.isArray(uploaded.value) ? uploaded.value : []
       ).map((a: Omit<ArticleItem, "_type">) => ({ ...a, _type: "uploaded_article" as const }));
