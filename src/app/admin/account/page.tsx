@@ -133,6 +133,7 @@ export default function AdminAccountPage() {
     setEmailError("");
     try {
       await authAPI.changeEmail({
+        id: user!.id,
         email: user!.email,
         token: emailOtp,
         new_email: emailForm.new_email,

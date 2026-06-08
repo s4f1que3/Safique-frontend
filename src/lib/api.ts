@@ -203,7 +203,7 @@ export const authAPI = {
       body: JSON.stringify({ email, token }),
     }).then(handle),
 
-  changeEmail: (data: { email: string; token: string; new_email: string }) =>
+  changeEmail: (data: { id: string; email: string; token: string; new_email: string }) =>
     fetchWithAuth(`${BASE_URL}/auth/change-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
