@@ -11,6 +11,9 @@ interface Article {
   _id: string;
   Title: string;
   content: string;
+  thumbnailUrl?: string;
+  images?: unknown[];
+  Files?: unknown[];
 }
 
 export default function EditArticlePage() {
@@ -61,7 +64,13 @@ export default function EditArticlePage() {
       </Link>
       <h1 className="text-2xl font-semibold text-text-primary mb-8">Edit article</h1>
       <ArticleForm
-        initialData={{ title: article.Title, content: article.content }}
+        initialData={{
+          title: article.Title,
+          content: article.content,
+          thumbnailUrl: article.thumbnailUrl,
+          existingImageCount: article.images?.length ?? 0,
+          existingFileCount: article.Files?.length ?? 0,
+        }}
         onSubmit={handleSubmit}
         submitLabel="Save changes"
       />

@@ -4,7 +4,13 @@ import { useState } from "react";
 import { Upload, X } from "lucide-react";
 
 interface ArticleFormProps {
-  initialData?: { title?: string; content?: string };
+  initialData?: {
+    title?: string;
+    content?: string;
+    thumbnailUrl?: string;
+    existingImageCount?: number;
+    existingFileCount?: number;
+  };
   onSubmit: (formData: FormData) => Promise<void>;
   submitLabel?: string;
 }
@@ -108,6 +114,17 @@ export default function ArticleForm({
             onChange={(e) => setThumbnail(e.target.files?.[0] || null)}
             className="hidden"
           />
+          {!thumbnail && initialData?.thumbnailUrl && (
+            <div className="mt-3 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={initialData.thumbnailUrl}
+                alt="Current thumbnail"
+                className="w-20 h-14 object-cover rounded-lg border border-border-color"
+              />
+              <span className="text-xs text-text-secondary">Current thumbnail — upload a new one to replace</span>
+            </div>
+          )}
           {thumbnail && (
             <div className="mt-3 flex items-center gap-1.5 bg-surface px-2.5 py-1 rounded-lg text-xs text-text-secondary w-fit">
               {thumbnail.name}
@@ -144,6 +161,11 @@ export default function ArticleForm({
             onChange={addImages}
             className="hidden"
           />
+          {(initialData?.existingImageCount ?? 0) > 0 && (
+            <p className="mt-3 text-xs text-text-secondary">
+              {initialData!.existingImageCount} existing image{initialData!.existingImageCount !== 1 ? "s" : ""} already uploaded
+            </p>
+          )}
           {images.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {images.map((img, i) => (
@@ -186,6 +208,11 @@ export default function ArticleForm({
             onChange={addFiles}
             className="hidden"
           />
+          {(initialData?.existingFileCount ?? 0) > 0 && (
+            <p className="mt-3 text-xs text-text-secondary">
+              {initialData!.existingFileCount} existing file{initialData!.existingFileCount !== 1 ? "s" : ""} already uploaded
+            </p>
+          )}
           {files.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {files.map((f, i) => (
