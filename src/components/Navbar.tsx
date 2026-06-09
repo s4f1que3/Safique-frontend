@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -16,8 +17,8 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-border-color">
       <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-        <Link href="/" className="text-text-primary font-semibold text-lg tracking-tight">
-          Joel Richards
+        <Link href="/" className="flex items-center">
+          <Image src="/joel-logo.png" alt="Joel Richards" width={120} height={40} className="h-8 w-auto" priority />
         </Link>
         <div className="flex items-center gap-8">
           <Link href="/articles" className="text-text-secondary hover:text-text-primary text-sm transition-colors">
